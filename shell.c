@@ -101,5 +101,19 @@ int main(int argc, char *argv[]) {
 
   parse_line(s, (&argv) );
   affiche_cmd (argv) ;
+
+  while(1){
+    printf("curdir$ %s\n", getcwd(argv,BUFSIZ) );
+    char * arg;
+    //read (1)
+  //  scanf("%s\n",&arg );
+    parse_line(arg,(&argv));
+    affiche_cmd(argv);
+  }
+
   return 0;
 }
+
+
+//Note à moi même, me debarrasser de tous mes printf, les
+//remplacer par des read et write avant de rendre ma version finale sur le git
