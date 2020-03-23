@@ -9,68 +9,11 @@
 
 void affiche_cmd(char* argv[]) {
   for (int i = 0; i<100 && argv[i]!=NULL; i++) {
-    printf("%s ", argv[i] );
+    printf("%s", argv[i] );
   }
   printf("\n" );
 }
-
-// int parse_line ( char *s, char** argv[]){
-//   char* cut ;
-//   int i =0;
-//   cut = strtok (s," ");
-//   (*argv)[i] = cut;
-//   i++;
-//   while (cut != NULL /*&& cut != '\0'*/){
-//     cut = strtok(NULL," ");
-//     //cut = strtok (s," ");
-//     (*argv)[i] = cut;
-//     i++;
-//   }
-//   (*argv)[i] = NULL;
-//   return 0;
-// }
-
-// int parse_line (char * s, char ** argv[]){
-//   char * lu = strpbrk (s ," ");
-//   int i =0;
-//   while(lu != NULL && s[i] != '\0'){
-//       if(strcmp(lu," ")!=0){
-//       (*argv)[i]=lu;
-//       lu = strpbrk(s," ");
-//       i++ ;
-//     }else lu = strpbrk(s," ");
-//   }
-//   (*argv)[i]=NULL;
-//   return 0;
-// }
-//
-// int parse_line_ (char * s, char * argv[]){
-//   char *p = strdup(s);
-//   char * lu = strpbrk (p ," ");
-//   int i =0;
-//   while(lu != NULL && s[i+1] != '\0'){
-//     if(strcmp(lu," ")!=0){
-//       argv[i]=malloc(sizeof(char)*(1+ strlen(lu)));
-//       strcpy(argv[i],lu);
-//       lu = strpbrk(s," ");
-//       i++ ;
-//     }else lu = strpbrk(s," ");
-//   }
-//   argv[i]=NULL;
-//   return 0;
-// }
-//
-//
-// int main(int argc, char *argv[]) {
-//   //char * argvv = argv;
-//   char * s= "commande -v toto   tata";
-//   (*argv) = malloc (sizeof(s) +1);
-//   parse_line(s, &(argv) );
-//   affiche_cmd (argv) ;
-//   return 0;
-// }
-
-
+//Parseur qui découpe la chaine de caractere s
 int parse_line (char * s, char ** argv[]){
   char *p = strdup(s);
   char * lu = strtok(p ," ");
@@ -95,6 +38,8 @@ int parse_line (char * s, char ** argv[]){
   return 0;
 }
 
+
+
 int main(int argc, char *argv[]) {
   //char * argvv = argv;
   char * s= "commande -v toto mammamia #ecrt  tata fatou";
@@ -102,13 +47,22 @@ int main(int argc, char *argv[]) {
   parse_line(s, (&argv) );
   affiche_cmd (argv) ;
 
+  // char arg[BUFSIZ];
+  // char* in;
+  // char* out;
+
   while(1){
-    printf("curdir$ %s\n", getcwd(argv,BUFSIZ) );
-    char * arg;
-    //read (1)
-  //  scanf("%s\n",&arg );
-    parse_line(arg,(&argv));
-    affiche_cmd(argv);
+    printf("curdir$ %s\n", getcwd(argv[0],BUFSIZ) );
+    char reader[BUFSIZ];
+    read(0,reader,BUFSIZ);
+    parse_line(reader, &argv);
+    affiche_cmd (argv);
+  //   printf("curdir$ %s\n", getcwd(argv,BUFSIZ) );
+  //   //char * arg;
+  //   //read (1)
+  // //  scanf("%s\n",&arg );
+  //   parse_line(argv[0],(&argv));
+  //   affiche_cmd(argv);
   }
 
   return 0;
