@@ -18,32 +18,33 @@ void affiche_cmd(char* argv[]) {
 }
 //Parseur qui découpe la chaine de caractere s
 int parse_line (char * s, char ** argv[]){
-  char* p = strdup(s);
-  char* lu = strtok(p ," ");
+  char *p = strdup(s);
+  const char * sep = " ";
+  char* lu = strtok(p , sep);
   int i = 0;
   char* p1 = strpbrk(s,"#");
+
   if(p1){
     char* msg="Ceci est un commentaire:";
     write(1,msg,strlen(msg)+1);
     write(1,p1,strlen(p1)+1);
     write(1,"\n",1);
   }
-   //printf("Ceci est un commentaire: %s\n",p1);
+
   while(lu != NULL){
 
     if(lu[0] != '#'){
-      (*argv)[i]=malloc(sizeof(char)*(1+ strlen(lu)));
+      argv[i]= (char **) malloc(sizeof(char)*(1+ strlen(lu)));
       (*argv)[i]=lu;
       lu = strtok(NULL," ");
       i++ ;
     }else{
-      (*argv)[i]=NULL;
-      return 0;
+      break;
     }
   }
   (*argv)[i]=NULL;
 
-  return 0;
+  return i;
 }
 
 void simple_cmd (char * argv[]){
@@ -53,8 +54,6 @@ void simple_cmd (char * argv[]){
   else if (strcmp(argv[0],"cd")==0){
     int change = chdir(argv[0]);
     if (change == -1) write(STDERR_FILENO,"Directory changement not done",BUFSIZ);
-    // int fd= chdir(argv[0]);
-    // if(fd == -1) return
   }else{
     p = fork();
     if(p == 0){
@@ -73,16 +72,22 @@ int main(int argc, char *argv[]) {
 
   char reader[BUFSIZ];
   int lu;
+//Affiche le chemin avant la boucle
+  char curdir[BUFSIZ];
+  getcwd(curdir, BUFSIZ);
+  write (1,curdir,strlen(curdir));
+  write(1,"\n",1);
+
   while( (lu=read(STDIN_FILENO,reader,BUFSIZ)) > 0){
-  // while(1){
-  //   lu=read(STDIN_FILENO,reader,BUFSIZ);
-    //    printf("curdir$ %s\n", getcwd(argv[0],BUFSIZ) );
-    char * curdir= getcwd(argv[0],BUFSIZ);
-    write (1,curdir,strlen(curdir));
-    write(1,"\n",1);
-    //maintenant, on peut simplifier ton code, tjrs dans le parseur
-    parse_line(reader, &argv);
-    affiche_cmd (argv) ;
+      getcwd(curdir, BUFSIZ);//
+
+      char **holder;
+      write (1,curdir,strlen(curdir));
+      write(1,"\n",1);
+      //parse_line(reader, &argv);
+      parse_line(reader, &holder);
+      affiche_cmd (holder);
+
   //   printf("curdir$ %s\n", getcwd(argv,BUFSIZ) );
   //   //char * arg;
   //  //read (1)
