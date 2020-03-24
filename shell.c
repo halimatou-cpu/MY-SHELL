@@ -6,45 +6,66 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <string.h>
+#include <sys/wait.h>
 
 void affiche_cmd(char* argv[]) {
   for (int i = 0; i<100 && argv[i]!=NULL; i++) {
-    //printf("%s", argv[i] );
     write(STDOUT_FILENO,argv[i],strlen(argv[i])+ 1);
     write(1, " ", 1);
   }
   write(1,"\n",1);
-  //printf("\n" );
 }
+
+char * sub_string (char * s, int i){
+  char* cont = (char*) malloc(sizeof(char)*(i+1));
+
+  for(int j=0; j<strlen(s) && j<i ;j++){
+    cont[j]=s[j];
+  }
+  cont[i]='\0';
+  return cont;
+}
+
+//Retourne l'indice de la premiere occurence du caractere 'c'
+//dans la chaîne de caractère s
+int find_char(char* s, char c){
+  int len = strlen(s);
+  int i = 0;
+  for (i = 0; i < len; i++){
+    if(s[i] == c) return i;
+  }
+  return -1;
+}
+
 //Parseur qui découpe la chaine de caractere s
 int parse_line (char * s, char ** argv[]){
-  char *p = strdup(s);
+
+  char* p1 = strpbrk(s,"#");
+  int len = p1 == NULL? 0 : strlen(p1);
+  int t = strlen(s) - len;
+
+  char *p = sub_string(s,t);
   const char * sep = " ";
   char* lu = strtok(p , sep);
+
   int i = 0;
-  char* p1 = strpbrk(s,"#");
-
-  if(p1){
-    char* msg="Ceci est un commentaire:";
-    write(1,msg,strlen(msg)+1);
-    write(1,p1,strlen(p1)+1);
-    write(1,"\n",1);
+  while(lu){
+    argv[i]= (char **) malloc(sizeof(char)*(1+ strlen(lu)));
+    (*argv)[i]=lu;
+    lu = strtok(NULL," ");
+    i++ ;
   }
-
-  while(lu != NULL){
-
-    if(lu[0] != '#'){
-      argv[i]= (char **) malloc(sizeof(char)*(1+ strlen(lu)));
-      (*argv)[i]=lu;
-      lu = strtok(NULL," ");
-      i++ ;
-    }else{
-      break;
-    }
-  }
-  (*argv)[i]=NULL;
-
+  (*argv)[i] = NULL;
   return i;
+}
+
+void test_parse(char *argv[]){
+  char * s= "commande -v toto mammamia #ecrt  tata fatou";
+
+  parse_line(s, (&argv) );
+  affiche_cmd (argv) ;
+
+  write(1, sub_string(s,4), strlen(sub_string(s,4)));
 }
 
 void simple_cmd (char * argv[]){
@@ -52,50 +73,84 @@ void simple_cmd (char * argv[]){
   pid_t p;
   if(strcmp(argv[0],"exit")==0) exit(EXIT_SUCCESS);
   else if (strcmp(argv[0],"cd")==0){
-    int change = chdir(argv[0]);
-    if (change == -1) write(STDERR_FILENO,"Directory changement not done",BUFSIZ);
+    int change;
+    if(argv[1]!=NULL){
+      write(1, argv[1], strlen(argv[1]));
+      write(1,"\n",1);
+      change = chdir(argv[1]);
+      //if (change == -1) write(STDERR_FILENO,"Directory changement not done",BUFSIZ);
+    }else {
+      char parse [BUFSIZ];
+      getcwd (parse, BUFSIZ) ;
+      int len = strlen (parse);
+      int count=0;
+      size_t i;
+      for (i = 0; i < len && count <3 ; i++) {
+        if(parse[i]=='/') count++ ;
+      }
+      write(1, sub_string(parse, i), strlen(sub_string(parse, i)));
+      change = chdir (sub_string(parse, i));
+    }
   }else{
     p = fork();
     if(p == 0){
       execvp(argv[0],argv);
-      return;
+      wait(0);
     }
+  }
+}
 
+void cmd_main(char *argv[]){
+  char reader[BUFSIZ];
+  int lu;
+
+  char curdir[BUFSIZ];
+  getcwd(curdir, BUFSIZ);
+  write (1,curdir,strlen(curdir));
+  write(1,"$ ",2);
+
+  char **holder;
+  while( (lu=read(STDIN_FILENO,reader,BUFSIZ)) > 0){
+    getcwd(curdir, BUFSIZ);
+
+    write (1,curdir,strlen(curdir));
+    write(1,"$ ",2);
+    write(1,"\n",1);
+
+    parse_line(reader, &holder);
+    affiche_cmd (holder);
+    simple_cmd (holder);
+
+  }
+
+}
+
+void script_main(char *argv[]){
+  if(argv[1]){
+    int fd = open(argv[1], O_RDONLY | O_NONBLOCK, 0773);
+    if(fd != -1){
+      write(1,"voyons ",6);
+      int lire;
+      char ** tab;
+      char buffer[BUFSIZ];
+      while ((lire=read(fd,buffer,BUFSIZ))>0){
+        write(1,"Rienderien",10);
+        parse_line(buffer, &tab);
+        affiche_cmd(tab);
+        simple_cmd(tab);
+        write(1,"wesh",4);
+      }
+      close(fd);
+    }else{
+       write(1,"script pas ouvert",17);
+    }
   }
 }
 
 int main(int argc, char *argv[]) {
-  char * s= "commande -v toto mammamia #ecrt  tata fatou";
-
-  parse_line(s, (&argv) );
-  affiche_cmd (argv) ;
-
-  char reader[BUFSIZ];
-  int lu;
-//Affiche le chemin avant la boucle
-  char curdir[BUFSIZ];
-  getcwd(curdir, BUFSIZ);
-  write (1,curdir,strlen(curdir));
-  write(1,"\n",1);
-
-  while( (lu=read(STDIN_FILENO,reader,BUFSIZ)) > 0){
-      getcwd(curdir, BUFSIZ);//
-
-      char **holder;
-      write (1,curdir,strlen(curdir));
-      write(1,"\n",1);
-      //parse_line(reader, &argv);
-      parse_line(reader, &holder);
-      affiche_cmd (holder);
-
-  //   printf("curdir$ %s\n", getcwd(argv,BUFSIZ) );
-  //   //char * arg;
-  //  //read (1)
-  //  //scanf("%s\n",&arg );
-  //   parse_line(argv[0],(&argv));
-  //   affiche_cmd(argv);
-  }
-
+  //test_parse(argv);
+  //cmd_main(argv);
+  script_main(argv);
   return 0;
 }
 
