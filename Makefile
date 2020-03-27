@@ -2,7 +2,7 @@ EXEC=shell
 SOURCES=shell.c
 OBJECTS=$(SOURCES:.c=.o)
 CC=gcc
-CFLAGS=-W -Wall -std=gnu99 -g
+CFLAGS=-W -Wall -Werror -std=gnu99 -g
 
 .PHONY: default clean
 
