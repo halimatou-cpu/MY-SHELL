@@ -192,6 +192,58 @@ void simple_cmd(char *argv[])
     }
 }
 
+//Retourne l'indice de la premiere occurence du caractere 'c'
+//dans la chaîne de caractère s
+int find_char(char *s, char c)
+{
+    int len = strlen(s);
+    int i = 0;
+    for (i = 0; i < len; i++)
+    {
+        if (s[i] == c)
+            return i;
+    }
+    return -1;
+}
+
+void parse_line_redir(char *s, char **argv[], char **in, char **out)
+{
+
+    parse_line(s, argv);
+    int i = 1;
+    int len = 0;
+    while ((*argv)[i])
+    {
+        if ((find_char((*argv)[i], '>')) != -1)
+        {
+            in[len] = (char *)malloc(sizeof(char) * (1 + strlen((*argv)[i - 1])));
+            in[len] = (*argv)[i - 1];
+            if ((*argv)[i + 1])
+            {
+                out[len] = (char *)malloc(sizeof(char) * (1 + strlen((*argv)[i + 1])));
+                out[len] = (*argv)[i + 1];
+            }
+            else
+                out[len] = NULL;
+            len++;
+        }
+        if ((find_char((*argv)[i], '<')) != -1)
+        {
+            out[len] = (char *)malloc(sizeof(char) * (1 + strlen((*argv)[i - 1])));
+            out[len] = (*argv)[i - 1];
+            if ((*argv)[i + 1])
+            {
+                in[len] = (char *)malloc(sizeof(char) * (1 + strlen((*argv)[i + 1])));
+                in[len] = (*argv)[i + 1];
+            }
+            else
+                in[len] = NULL;
+            len++;
+        }
+        i++;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     write(1, argv[argc], 0);
