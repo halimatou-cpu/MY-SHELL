@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <error.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #define BUFSIZE 1024
 #define MAX_ARG 100
@@ -91,6 +92,7 @@ void free_2D(char **array)
 }
 
 /*Fonction qui crée un processus fils qui exécute une cmd
+*/
 void executor(char *command[])
 {
     pid_t pid = fork();
@@ -109,7 +111,6 @@ void executor(char *command[])
         // error
     }
 }
-*/
 
 //fonction qui nettoie un buffer
 void cleaner(char *buffer)
@@ -145,7 +146,6 @@ void cmd_executor()
 
         simple_cmd(result);
 
-        // executor(result);
         free_2D(result);
     }
 }
@@ -192,6 +192,34 @@ void simple_cmd(char *argv[])
     }
 }
 
+//la procedure d'execution de script de commande
+void script_main(char *argv[])
+{
+
+  if (argv[1])
+  {
+
+    int fd = open(argv[1], O_RDONLY | O_NONBLOCK, 0773);
+    if (fd != -1)
+    {
+      int lire;
+      char **tab;
+      char buffer[BUFSIZE];
+      while ((lire = read(fd, buffer, BUFSIZE)) > 0)
+      {
+        parse_line(buffer, &tab);
+        affiche_cmd(tab);
+        simple_cmd(tab);
+      }
+      close(fd);
+    }
+    else
+    {
+      write(1, "script pas ouvert", 17);
+    }
+  }
+}
+
 //Retourne l'indice de la premiere occurence du caractere 'c'
 //dans la chaîne de caractère s
 int find_char(char *s, char c)
@@ -217,11 +245,11 @@ void parse_line_redir(char *s, char **argv[], char **in, char **out)
         if ((find_char((*argv)[i], '>')) != -1)
         {
             in[len] = (char *)malloc(sizeof(char) * (1 + strlen((*argv)[i - 1])));
-            in[len] = (*argv)[i - 1];
+            strcpy(in[len], (*argv)[i - 1]);
             if ((*argv)[i + 1])
             {
                 out[len] = (char *)malloc(sizeof(char) * (1 + strlen((*argv)[i + 1])));
-                out[len] = (*argv)[i + 1];
+                strcpy(out[len], (*argv)[i + 1]);
             }
             else
                 out[len] = NULL;
@@ -230,11 +258,11 @@ void parse_line_redir(char *s, char **argv[], char **in, char **out)
         if ((find_char((*argv)[i], '<')) != -1)
         {
             out[len] = (char *)malloc(sizeof(char) * (1 + strlen((*argv)[i - 1])));
-            out[len] = (*argv)[i - 1];
+            strcpy(out[len], (*argv)[i - 1]);
             if ((*argv)[i + 1])
             {
                 in[len] = (char *)malloc(sizeof(char) * (1 + strlen((*argv)[i + 1])));
-                in[len] = (*argv)[i + 1];
+                strcpy(in[len], (*argv)[i + 1]);
             }
             else
                 in[len] = NULL;
@@ -244,14 +272,45 @@ void parse_line_redir(char *s, char **argv[], char **in, char **out)
     }
 }
 
+int redir_cmd(char *argv[], char *in, char *out)
+{
+    int fdin, fdout;
+    int dupin, dupout;
+    if (in)
+    {
+        fdin = open(in, O_RDONLY);
+        dupin = dup(STDIN_FILENO);
+        dup2(fdin, STDIN_FILENO);
+    }
+    if (out)
+    {
+        fdout = open(out, O_RDONLY);
+        dupout = dup(STDOUT_FILENO);
+        dup2(fdout, STDOUT_FILENO);
+    }
+
+    simple_cmd(argv);
+
+    close(fdin);
+    dup2(dupin, STDIN_FILENO);
+    close(fdout);
+    dup2(dupout, STDOUT_FILENO);
+
+
+    return 0;
+}
+
+//cmd1toto|cmd2tatatiti|cmd3
+
 int main(int argc, char *argv[])
 {
-    write(1, argv[argc], 0);
+    write(1, argv[argc], 0); //juste se debarasser du warning argc unused
     // affiche_cmd(parse_line_bis("voyons cette commande # apres parse"));
 
     //l'appel de cmd_executor dans le main contient la question 6
     //avec en plus l'exécution des commandes une fois que l'utilisateur
     //tape sur entrée
     cmd_executor();
+    // script_main(argv);
     return 0;
 }
