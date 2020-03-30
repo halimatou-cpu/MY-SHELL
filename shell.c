@@ -196,28 +196,28 @@ void simple_cmd(char *argv[])
 void script_main(char *argv[])
 {
 
-  if (argv[1])
-  {
+    if (argv[1])
+    {
 
-    int fd = open(argv[1], O_RDONLY | O_NONBLOCK, 0773);
-    if (fd != -1)
-    {
-      int lire;
-      char **tab;
-      char buffer[BUFSIZE];
-      while ((lire = read(fd, buffer, BUFSIZE)) > 0)
-      {
-        parse_line(buffer, &tab);
-        affiche_cmd(tab);
-        simple_cmd(tab);
-      }
-      close(fd);
+        int fd = open(argv[1], O_RDONLY | O_NONBLOCK, 0773);
+        if (fd != -1)
+        {
+            int lire;
+            char **tab;
+            char buffer[BUFSIZE];
+            while ((lire = read(fd, buffer, BUFSIZE)) > 0)
+            {
+                parse_line(buffer, &tab);
+                affiche_cmd(tab);
+                simple_cmd(tab);
+            }
+            close(fd);
+        }
+        else
+        {
+            write(1, "script pas ouvert", 17);
+        }
     }
-    else
-    {
-      write(1, "script pas ouvert", 17);
-    }
-  }
 }
 
 //Retourne l'indice de la premiere occurence du caractere 'c'
@@ -296,11 +296,31 @@ int redir_cmd(char *argv[], char *in, char *out)
     close(fdout);
     dup2(dupout, STDOUT_FILENO);
 
-
     return 0;
 }
 
-//cmd1toto|cmd2tatatiti|cmd3
+//cmd1 toto|cmd2 tata titi|cmd3
+int parse_line_pipes(char *s, char ***argv[])
+{
+    char *p1 = strpbrk(s, "#");
+    int len = p1 == NULL ? 0 : strlen(p1);
+    int t = strlen(s) - len;
+
+    char *p = sub_string(s, t);
+    const char *sep = "|";
+    char *lu = strtok(p, sep);
+
+    int i = 0;
+    while (lu)
+    {
+        ((*argv))[i] = malloc(sizeof(char) * (1 + strlen(lu)));
+        ((*argv))[i] = parse_line_bis(lu);
+        lu = strtok(NULL, "|");
+        i++;
+    }
+    ((*argv))[i] = NULL;
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -311,6 +331,7 @@ int main(int argc, char *argv[])
     //avec en plus l'exécution des commandes une fois que l'utilisateur
     //tape sur entrée
     cmd_executor();
+
     // script_main(argv);
     return 0;
 }
